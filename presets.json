@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "catalogVersion": 1,
+  "catalogVersion": 2,
   "presets": [
     {
       "id": "jo-arab-bank",
@@ -8,7 +8,7 @@
       "kind": "bank",
       "country": "JO",
       "updatedAt": "2026-10-27",
-      "description": "Card purchases and CliQ transfers received.",
+      "description": "Arabic SMS alerts: card purchases, cash withdrawals, CliQ payments in and out, transfers in, out and between your accounts, and bill payments.",
       "senders": [
         "ArabBank",
         "Arab Bank"
@@ -16,34 +16,87 @@
       "notificationApps": [],
       "rules": [
         {
-          "name": "Arab Bank - Card purchase",
-          "description": "Debit card payments",
-          "keyword": "debited",
+          "name": "Arab Bank - Transfer between my accounts",
+          "description": "Transfers from one of your accounts to another",
+          "keyword": "حوالة && من حساب && لحساب",
           "actions": [
             {
-              "actionType": "Regex Extract",
+              "actionType": "Extract Between",
               "targetColumn": "Amount",
-              "value": "debited with\\s*(?:JOD)?\\s*([0-9.,]+)"
+              "value": "\\QJOD\\E\\s*([\\p{L}\\p{N}\\s\\.,\\$\\*#/\\-]+?)(?:\\s*\\Qمن\\E|$)",
+              "prefix": "JOD ",
+              "suffix": " من",
+              "extractMode": "BETWEEN"
             },
             {
-              "actionType": "Regex Extract",
+              "actionType": "Set Value",
               "targetColumn": "Merchant",
-              "value": "at\\s+(.*?)(?:\\s+on|\\.|$)"
+              "value": "Internal Transfer",
+              "prefix": "",
+              "suffix": "",
+              "extractMode": "STATIC"
             },
             {
               "actionType": "Set Value",
               "targetColumn": "Type",
-              "value": "Expense"
+              "value": "Transfer",
+              "prefix": "",
+              "suffix": "",
+              "extractMode": "STATIC"
             },
             {
-              "actionType": "Set Value",
-              "targetColumn": "Category",
-              "value": "General"
+              "actionType": "Regex Extract",
+              "targetColumn": "Account",
+              "value": "من حساب\\s*[0-9]*\\*?([0-9]+)"
+            },
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Destination Account",
+              "value": "لحساب\\s*[0-9]*\\*?([0-9]+)"
             }
           ],
           "samples": [
             {
-              "message": "Your card ending 1234 was debited with JOD 12.500 at CARREFOUR on 25/10/2026.",
+              "message": "حوالة بمبلغ JOD 50.000 من حساب 0100*4567 لحساب 0100*8910 .",
+              "amount": 50.0,
+              "merchant": "Internal Transfer",
+              "type": "Transfer"
+            }
+          ]
+        },
+        {
+          "name": "Arab Bank - Card purchase",
+          "description": "Card purchases",
+          "keyword": "حركة شراء",
+          "actions": [
+            {
+              "actionType": "Extract Between",
+              "targetColumn": "Amount",
+              "value": "\\QJOD\\E\\s*([A-Za-z0-9\\s\\.,\\$]+?)(?:\\s*\\Qبتاريخ\\E|$)",
+              "prefix": "JOD ",
+              "suffix": " بتاريخ",
+              "extractMode": "BETWEEN"
+            },
+            {
+              "actionType": "Extract Between",
+              "targetColumn": "Merchant",
+              "value": "\\*\\d+\\s+من\\s+(.+?)\\s+بمبلغ",
+              "prefix": "",
+              "suffix": " ",
+              "extractMode": "BETWEEN"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Type",
+              "value": "Expense",
+              "prefix": "",
+              "suffix": "",
+              "extractMode": "STATIC"
+            }
+          ],
+          "samples": [
+            {
+              "message": "حركة شراء على البطاقة *1234 من CARREFOUR بمبلغ JOD 12.500 بتاريخ 27/10/2026 .الرصيد 300.000 دينار",
               "amount": 12.5,
               "merchant": "CARREFOUR",
               "type": "Expense"
@@ -51,193 +104,58 @@
           ]
         },
         {
-          "name": "Arab Bank - CliQ received",
-          "description": "Money received through CliQ",
-          "keyword": "CliQ",
+          "name": "Arab Bank - CliQ payment sent",
+          "description": "CliQ payments you send",
+          "keyword": "دفعة كليك && إلى",
           "actions": [
             {
-              "actionType": "Regex Extract",
+              "actionType": "Extract Between",
               "targetColumn": "Amount",
-              "value": "(?:received|credited with)\\s*(?:JOD)?\\s*([0-9.,]+)"
+              "value": "\\Qبمبلغ\\E\\s*([A-Za-z0-9\\s\\.,\\$]+?)(?:\\s*\\Qمن\\E|$)",
+              "prefix": "بمبلغ ",
+              "suffix": " من",
+              "extractMode": "BETWEEN"
             },
             {
-              "actionType": "Regex Extract",
+              "actionType": "Extract Between",
               "targetColumn": "Merchant",
-              "value": "from\\s+(.*?)(?:\\s+via|\\.|$)"
+              "value": "\\Qإلى\\E\\s*([A-Za-z0-9\\s\\.,\\$]+?)(?:\\s*\\Qالرصيد\\E|$)",
+              "prefix": "إلى ",
+              "suffix": "الرصيد",
+              "extractMode": "BETWEEN"
             },
             {
               "actionType": "Set Value",
               "targetColumn": "Type",
-              "value": "Income"
-            },
-            {
-              "actionType": "Set Value",
-              "targetColumn": "Category",
-              "value": "Transfer"
+              "value": "Expense",
+              "prefix": "",
+              "suffix": "",
+              "extractMode": "STATIC"
             }
           ],
           "samples": [
             {
-              "message": "You have received JOD 50.000 from AHMAD ALI via CliQ.",
-              "amount": 50.0,
-              "merchant": "AHMAD ALI",
-              "type": "Income",
-              "category": "Transfer"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "jo-bank-al-etihad",
-      "name": "Bank al Etihad",
-      "kind": "bank",
-      "country": "JO",
-      "updatedAt": "2026-10-27",
-      "description": "Card (POS) purchases and CliQ transfers received.",
-      "senders": [
-        "BankAlEtihad",
-        "Etihad"
-      ],
-      "notificationApps": [],
-      "rules": [
-        {
-          "name": "Bank al Etihad - Card purchase",
-          "description": "POS purchases",
-          "keyword": "purchase",
-          "actions": [
-            {
-              "actionType": "Regex Extract",
-              "targetColumn": "Amount",
-              "value": "(?:JOD|JD|USD|EUR)?\\s*([0-9.,]+)"
-            },
-            {
-              "actionType": "Regex Extract",
-              "targetColumn": "Merchant",
-              "value": "at\\s+(.*?)(?:\\s+on|\\.|$)"
-            },
-            {
-              "actionType": "Set Value",
-              "targetColumn": "Type",
-              "value": "Expense"
-            },
-            {
-              "actionType": "Set Value",
-              "targetColumn": "Category",
-              "value": "Shopping"
-            }
-          ],
-          "samples": [
-            {
-              "message": "Purchase of JOD 15.750 at CARREFOUR on 27/10/2026",
-              "amount": 15.75,
-              "merchant": "CARREFOUR",
-              "type": "Expense",
-              "category": "Shopping"
-            }
-          ]
-        },
-        {
-          "name": "Bank al Etihad - CliQ received",
-          "description": "Money received through CliQ",
-          "keyword": "CliQ",
-          "actions": [
-            {
-              "actionType": "Regex Extract",
-              "targetColumn": "Amount",
-              "value": "(?:received|credited with)\\s*(?:JOD)?\\s*([0-9.,]+)"
-            },
-            {
-              "actionType": "Regex Extract",
-              "targetColumn": "Merchant",
-              "value": "from\\s+(.*?)(?:\\s+via|\\.|$)"
-            },
-            {
-              "actionType": "Set Value",
-              "targetColumn": "Type",
-              "value": "Income"
-            },
-            {
-              "actionType": "Set Value",
-              "targetColumn": "Category",
-              "value": "Transfer"
-            }
-          ],
-          "samples": [
-            {
-              "message": "You have received JOD 50.000 from AHMAD ALI via CliQ.",
-              "amount": 50.0,
-              "merchant": "AHMAD ALI",
-              "type": "Income",
-              "category": "Transfer"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "jo-jordan-islamic-bank",
-      "name": "Jordan Islamic Bank",
-      "kind": "bank",
-      "country": "JO",
-      "updatedAt": "2026-10-27",
-      "description": "Account debits (Arabic messages) and CliQ transfers received.",
-      "senders": [
-        "JIB",
-        "JordanIslamicBank",
-        "IslamicBank"
-      ],
-      "notificationApps": [],
-      "rules": [
-        {
-          "name": "Jordan Islamic Bank - Account debit",
-          "description": "Payments from your account (Arabic)",
-          "keyword": "حسابك",
-          "actions": [
-            {
-              "actionType": "Regex Extract",
-              "targetColumn": "Amount",
-              "value": "مبلغ\\s*([0-9.,]+)"
-            },
-            {
-              "actionType": "Regex Extract",
-              "targetColumn": "Merchant",
-              "value": "لدى\\s+(.*?)(?:\\s+بتاريخ|\\.|$)"
-            },
-            {
-              "actionType": "Set Value",
-              "targetColumn": "Type",
-              "value": "Expense"
-            },
-            {
-              "actionType": "Set Value",
-              "targetColumn": "Category",
-              "value": "General"
-            }
-          ],
-          "samples": [
-            {
-              "message": "تم خصم مبلغ 20.000 دينار من حسابك لدى سامح مول بتاريخ 27/10/2026",
+              "message": "دفعة كليك بمبلغ 20.000 من حسابك إلى AHMAD ALI الرصيد 280.000",
               "amount": 20.0,
-              "merchant": "سامح مول",
+              "merchant": "AHMAD ALI",
               "type": "Expense"
             }
           ]
         },
         {
-          "name": "Jordan Islamic Bank - CliQ received",
-          "description": "Money received through CliQ",
-          "keyword": "CliQ",
+          "name": "Arab Bank - CliQ payment received",
+          "description": "CliQ payments you receive",
+          "keyword": "دفعة كليك && لحساب",
           "actions": [
             {
               "actionType": "Regex Extract",
               "targetColumn": "Amount",
-              "value": "(?:received|credited with)\\s*(?:JOD)?\\s*([0-9.,]+)"
+              "value": "دفعة كليك ([\\d.]+) JOD"
             },
             {
               "actionType": "Regex Extract",
               "targetColumn": "Merchant",
-              "value": "from\\s+(.*?)(?:\\s+via|\\.|$)"
+              "value": "من (.*?) الرصيد"
             },
             {
               "actionType": "Set Value",
@@ -245,51 +163,34 @@
               "value": "Income"
             },
             {
-              "actionType": "Set Value",
-              "targetColumn": "Category",
-              "value": "Transfer"
+              "actionType": "Regex Extract",
+              "targetColumn": "Date",
+              "value": "بتاريخ\\s+([\\d/: ]+)"
             }
           ],
           "samples": [
             {
-              "message": "You have received JOD 50.000 from AHMAD ALI via CliQ.",
-              "amount": 50.0,
+              "message": "دفعة كليك 35.000 JOD لحساب 0100*4567 من AHMAD ALI الرصيد 315.000 بتاريخ 27/10/2026 14:30",
+              "amount": 35.0,
               "merchant": "AHMAD ALI",
-              "type": "Income",
-              "category": "Transfer"
+              "type": "Income"
             }
           ]
-        }
-      ]
-    },
-    {
-      "id": "paypal",
-      "name": "PayPal",
-      "kind": "wallet",
-      "country": "",
-      "updatedAt": "2026-10-27",
-      "description": "Payments you send.",
-      "senders": [
-        "PayPal"
-      ],
-      "notificationApps": [
-        "com.paypal.android.p2pmobile"
-      ],
-      "rules": [
+        },
         {
-          "name": "PayPal - Payment sent",
-          "description": "Payments you send",
-          "keyword": "sent a payment",
+          "name": "Arab Bank - Transfer sent",
+          "description": "Transfers out of your account",
+          "keyword": "حوالة && من حساب",
           "actions": [
             {
               "actionType": "Regex Extract",
               "targetColumn": "Amount",
-              "value": "sent a payment of\\s*\\$?([0-9.,]+)"
+              "value": "بمبلغ ([\\d.]+) JOD"
             },
             {
-              "actionType": "Regex Extract",
+              "actionType": "Set Value",
               "targetColumn": "Merchant",
-              "value": "to\\s+(.*?)(?:\\.|$)"
+              "value": "Transfer Out"
             },
             {
               "actionType": "Set Value",
@@ -297,16 +198,116 @@
               "value": "Expense"
             },
             {
-              "actionType": "Set Value",
-              "targetColumn": "Category",
-              "value": "Shopping"
+              "actionType": "Regex Extract",
+              "targetColumn": "Date",
+              "value": "بتاريخ\\s+([\\d/: ]+)"
             }
           ],
           "samples": [
             {
-              "message": "You sent a payment of $25.00 USD to Spotify.",
-              "amount": 25.0,
-              "merchant": "Spotify",
+              "message": "حوالة بمبلغ 100.000 JOD من حساب 0100*4567 بتاريخ 27/10/2026 09:00",
+              "amount": 100.0,
+              "merchant": "Transfer Out",
+              "type": "Expense"
+            }
+          ]
+        },
+        {
+          "name": "Arab Bank - Transfer received",
+          "description": "Transfers into your account",
+          "keyword": "حوالة && لحساب",
+          "actions": [
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Amount",
+              "value": "بمبلغ ([\\d.]+) JOD"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Merchant",
+              "value": "Transfer In"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Type",
+              "value": "Income"
+            },
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Date",
+              "value": "بتاريخ\\s+([\\d/: ]+)"
+            }
+          ],
+          "samples": [
+            {
+              "message": "حوالة بمبلغ 250.000 JOD لحساب 0100*4567 بتاريخ 27/10/2026 09:00",
+              "amount": 250.0,
+              "merchant": "Transfer In",
+              "type": "Income"
+            }
+          ]
+        },
+        {
+          "name": "Arab Bank - Cash withdrawal",
+          "description": "ATM cash withdrawals",
+          "keyword": "حركة سحب",
+          "actions": [
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Amount",
+              "value": "بمبلغ ([\\d.]+) JOD"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Merchant",
+              "value": "Cash Withdrawal"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Type",
+              "value": "Cash Withdrawal"
+            },
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Date",
+              "value": "بتاريخ\\s+([\\d/: ]+)"
+            }
+          ],
+          "samples": [
+            {
+              "message": "حركة سحب نقدي بمبلغ 40.000 JOD من الصراف الآلي بتاريخ 27/10/2026 10:15",
+              "amount": 40.0,
+              "merchant": "Cash Withdrawal",
+              "type": "Cash Withdrawal"
+            }
+          ]
+        },
+        {
+          "name": "Arab Bank - Bill payment",
+          "description": "Bills paid from your account",
+          "keyword": "دفع فاتورة",
+          "actions": [
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Amount",
+              "value": "بمبلغ JOD\\s*([\\d.]+)"
+            },
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Merchant",
+              "value": "دفع فاتورة (.*?)\\s+رقم"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Type",
+              "value": "Expense"
+            }
+          ],
+          "samples": [
+            {
+              "message": "دفع فاتورة ZAIN رقم 0790000000 بمبلغ JOD 15.000",
+              "amount": 15.0,
+              "merchant": "ZAIN",
               "type": "Expense"
             }
           ]
