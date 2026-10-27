@@ -1,0 +1,317 @@
+{
+  "schema": 2,
+  "catalogVersion": 1,
+  "presets": [
+    {
+      "id": "jo-arab-bank",
+      "name": "Arab Bank",
+      "kind": "bank",
+      "country": "JO",
+      "updatedAt": "2026-10-27",
+      "description": "Card purchases and CliQ transfers received.",
+      "senders": [
+        "ArabBank",
+        "Arab Bank"
+      ],
+      "notificationApps": [],
+      "rules": [
+        {
+          "name": "Arab Bank - Card purchase",
+          "description": "Debit card payments",
+          "keyword": "debited",
+          "actions": [
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Amount",
+              "value": "debited with\\s*(?:JOD)?\\s*([0-9.,]+)"
+            },
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Merchant",
+              "value": "at\\s+(.*?)(?:\\s+on|\\.|$)"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Type",
+              "value": "Expense"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Category",
+              "value": "General"
+            }
+          ],
+          "samples": [
+            {
+              "message": "Your card ending 1234 was debited with JOD 12.500 at CARREFOUR on 25/10/2026.",
+              "amount": 12.5,
+              "merchant": "CARREFOUR",
+              "type": "Expense"
+            }
+          ]
+        },
+        {
+          "name": "Arab Bank - CliQ received",
+          "description": "Money received through CliQ",
+          "keyword": "CliQ",
+          "actions": [
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Amount",
+              "value": "(?:received|credited with)\\s*(?:JOD)?\\s*([0-9.,]+)"
+            },
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Merchant",
+              "value": "from\\s+(.*?)(?:\\s+via|\\.|$)"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Type",
+              "value": "Income"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Category",
+              "value": "Transfer"
+            }
+          ],
+          "samples": [
+            {
+              "message": "You have received JOD 50.000 from AHMAD ALI via CliQ.",
+              "amount": 50.0,
+              "merchant": "AHMAD ALI",
+              "type": "Income",
+              "category": "Transfer"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jo-bank-al-etihad",
+      "name": "Bank al Etihad",
+      "kind": "bank",
+      "country": "JO",
+      "updatedAt": "2026-10-27",
+      "description": "Card (POS) purchases and CliQ transfers received.",
+      "senders": [
+        "BankAlEtihad",
+        "Etihad"
+      ],
+      "notificationApps": [],
+      "rules": [
+        {
+          "name": "Bank al Etihad - Card purchase",
+          "description": "POS purchases",
+          "keyword": "purchase",
+          "actions": [
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Amount",
+              "value": "(?:JOD|JD|USD|EUR)?\\s*([0-9.,]+)"
+            },
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Merchant",
+              "value": "at\\s+(.*?)(?:\\s+on|\\.|$)"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Type",
+              "value": "Expense"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Category",
+              "value": "Shopping"
+            }
+          ],
+          "samples": [
+            {
+              "message": "Purchase of JOD 15.750 at CARREFOUR on 27/10/2026",
+              "amount": 15.75,
+              "merchant": "CARREFOUR",
+              "type": "Expense",
+              "category": "Shopping"
+            }
+          ]
+        },
+        {
+          "name": "Bank al Etihad - CliQ received",
+          "description": "Money received through CliQ",
+          "keyword": "CliQ",
+          "actions": [
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Amount",
+              "value": "(?:received|credited with)\\s*(?:JOD)?\\s*([0-9.,]+)"
+            },
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Merchant",
+              "value": "from\\s+(.*?)(?:\\s+via|\\.|$)"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Type",
+              "value": "Income"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Category",
+              "value": "Transfer"
+            }
+          ],
+          "samples": [
+            {
+              "message": "You have received JOD 50.000 from AHMAD ALI via CliQ.",
+              "amount": 50.0,
+              "merchant": "AHMAD ALI",
+              "type": "Income",
+              "category": "Transfer"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jo-jordan-islamic-bank",
+      "name": "Jordan Islamic Bank",
+      "kind": "bank",
+      "country": "JO",
+      "updatedAt": "2026-10-27",
+      "description": "Account debits (Arabic messages) and CliQ transfers received.",
+      "senders": [
+        "JIB",
+        "JordanIslamicBank",
+        "IslamicBank"
+      ],
+      "notificationApps": [],
+      "rules": [
+        {
+          "name": "Jordan Islamic Bank - Account debit",
+          "description": "Payments from your account (Arabic)",
+          "keyword": "حسابك",
+          "actions": [
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Amount",
+              "value": "مبلغ\\s*([0-9.,]+)"
+            },
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Merchant",
+              "value": "لدى\\s+(.*?)(?:\\s+بتاريخ|\\.|$)"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Type",
+              "value": "Expense"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Category",
+              "value": "General"
+            }
+          ],
+          "samples": [
+            {
+              "message": "تم خصم مبلغ 20.000 دينار من حسابك لدى سامح مول بتاريخ 27/10/2026",
+              "amount": 20.0,
+              "merchant": "سامح مول",
+              "type": "Expense"
+            }
+          ]
+        },
+        {
+          "name": "Jordan Islamic Bank - CliQ received",
+          "description": "Money received through CliQ",
+          "keyword": "CliQ",
+          "actions": [
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Amount",
+              "value": "(?:received|credited with)\\s*(?:JOD)?\\s*([0-9.,]+)"
+            },
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Merchant",
+              "value": "from\\s+(.*?)(?:\\s+via|\\.|$)"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Type",
+              "value": "Income"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Category",
+              "value": "Transfer"
+            }
+          ],
+          "samples": [
+            {
+              "message": "You have received JOD 50.000 from AHMAD ALI via CliQ.",
+              "amount": 50.0,
+              "merchant": "AHMAD ALI",
+              "type": "Income",
+              "category": "Transfer"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "paypal",
+      "name": "PayPal",
+      "kind": "wallet",
+      "country": "",
+      "updatedAt": "2026-10-27",
+      "description": "Payments you send.",
+      "senders": [
+        "PayPal"
+      ],
+      "notificationApps": [
+        "com.paypal.android.p2pmobile"
+      ],
+      "rules": [
+        {
+          "name": "PayPal - Payment sent",
+          "description": "Payments you send",
+          "keyword": "sent a payment",
+          "actions": [
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Amount",
+              "value": "sent a payment of\\s*\\$?([0-9.,]+)"
+            },
+            {
+              "actionType": "Regex Extract",
+              "targetColumn": "Merchant",
+              "value": "to\\s+(.*?)(?:\\.|$)"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Type",
+              "value": "Expense"
+            },
+            {
+              "actionType": "Set Value",
+              "targetColumn": "Category",
+              "value": "Shopping"
+            }
+          ],
+          "samples": [
+            {
+              "message": "You sent a payment of $25.00 USD to Spotify.",
+              "amount": 25.0,
+              "merchant": "Spotify",
+              "type": "Expense"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
